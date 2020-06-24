@@ -1,0 +1,14 @@
+This add-on adds a filter bar to the top of the context menu in the editor and browser that allows to filter the context menu. This add-on is only relevant if you have too many add-ons and don't want to create and remember shortcuts for all of them.
+
+<img src="https://raw.githubusercontent.com/ijgnd/anki__context_menu__filter_visible/master/screenshots/merge_markup.png"> 
+
+<b># Limitations/Technical Details</b>
+This add-on overwrites two built-in anki functions: "aqt.editor.EditorWebView.contextMenuEvent" and "aqt.browser.Browser.onContextMenu". 
+
+In 2020-06-25 there's this problem: Since the add-on <a href="https://ankiweb.net/shared/info/1374772155" rel="nofollow">Image Occlusion Enhanced</a> (version from  2020-04-28) also overwrites one of these functions the add-ons don't work together. The latest version of IO from ankiweb doesn't overwrite the contextmenu so you need to wait until this latest version of IO is uploaded to Ankiweb or copy over the changes to your local IO installation.
+
+<b># Versions</b>
+- 2020-06-25 initial release
+
+<b># bugs</b>
+Use this version at your own risk. Please do not use reviews for bug reports or support requests. Properly troubleshooting an issue through a review is nearly impossible because formatting is limited and I can't reply multiple times. If you find a bug let me know on <a href="https://github.com/ijgnd/anki__context_menu__filter_visible/issues" rel="nofollow">github</a> or via reddit (/u/ijgnord).

@@ -3,7 +3,10 @@ This add-on adds a filter bar to the top of the context menu in the editor and b
 <img src="https://raw.githubusercontent.com/ijgnd/anki__context_menu__filter_visible/master/screenshots/merge_markup.png"> 
 
 <b># Limitations/Technical Details</b>
-This add-on overwrites two built-in anki functions: "aqt.editor.EditorWebView.contextMenuEvent" and "aqt.browser.Browser.onContextMenu". 
+This add-on overwrites three built-in anki functions: 
+- aqt.editor.EditorWebView.contextMenuEvent
+- aqt.browser.Browser.onContextMenu
+- aqt.reviewer.Reviewer.showContextMenu
 
 In 2020-06-25 there's this problem: Since the add-on <a href="https://ankiweb.net/shared/info/1374772155" rel="nofollow">Image Occlusion Enhanced</a> (version from  2020-04-28) also overwrites one of these functions the add-ons don't work together. The latest version of IO from ankiweb doesn't overwrite the contextmenu so you need to wait until this latest version of IO is uploaded to Ankiweb or copy over the changes to your local IO installation.
 

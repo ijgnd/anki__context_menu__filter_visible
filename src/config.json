@@ -1,4 +1,8 @@
 {
-    "editor: additional shortcut for context menu": "Meta+X",
-    "browser: additional shortcut for context menu of table": "Meta+Shift+X"
+    "browser (table): enable this add-on": true,
+    "browser (table): additional shortcut for context menu": "Meta+Shift+a",
+    "editor: enable this add-on": true,
+    "editor: additional shortcut for context menu": "Meta+a",
+    "reviewer: enable this add-on": true,
+    "reviewer: additional shortcut for context menu": "Meta+a"
 }

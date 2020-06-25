@@ -46,6 +46,7 @@ from aqt.gui_hooks import (
     browser_will_show_context_menu,
     editor_did_init_shortcuts,
     editor_will_show_context_menu,
+    reviewer_will_show_context_menu,
 )
 from aqt.qt import (
     QAction,
@@ -64,6 +65,7 @@ from aqt.utils import (
 )
 from aqt.browser import Browser
 from aqt.editor import EditorWebView
+from aqt.reviewer import Reviewer
 
 from .filter_functions import (
     does_it_match,
@@ -91,6 +93,10 @@ QMenu::item:selected {
     background-color: #fd4332;
 }
 """
+
+
+# NOTE: I have three approaches for modifying the context menu. Mabe I should consolidate
+#       them at some point.
 
 
 class MyFilterMenu(QMenu):
@@ -147,7 +153,8 @@ def editor_context_helper(self):
 def editor_contextMenuEvent(self, evt: QContextMenuEvent) -> None:
     # self is EditorWebView
     editor_context_helper(self)
-EditorWebView.contextMenuEvent = editor_contextMenuEvent
+if gc("editor: enable this add-on"):
+    EditorWebView.contextMenuEvent = editor_contextMenuEvent
 
 
 
@@ -156,7 +163,8 @@ def onSetupEditorShortcuts(cuts, editor):
     if sc:
         pair = (sc, lambda ewv=editor.web: editor_contextMenuEvent(ewv))
         cuts.append(pair)
-editor_did_init_shortcuts.append(onSetupEditorShortcuts)
+if gc("editor: enable this add-on"):
+    editor_did_init_shortcuts.append(onSetupEditorShortcuts)
 
 
 
@@ -172,7 +180,7 @@ class MyBrowserFilterMenu(QMenu):
         self.addAction(self.le_container)
         self.le.setFocus()
         self.aboutToHide.connect(self.make_sure_all_are_visible)
-    
+
     def make_sure_all_are_visible(self):
         for element in self.actions():
             if not element.isVisible():
@@ -185,7 +193,7 @@ class MyBrowserFilterMenu(QMenu):
         search_string = search_string.lower()
         search_terms = split_search_terms_withStart(search_string)
         # doesn't work here: Maybe because these actions are defined in QtDesigner/the menu ?
-        # for element in self.children():  #
+        # for element in self.children():
         for element in self.actions():
             # print(element, type(element), element.text())
             if hasattr(element, "defaultWidget"):
@@ -213,13 +221,102 @@ def browser_context_helper(self):
 
 def browser_onContextMenu(self, _point) -> None:
     browser_context_helper(self)
-Browser.onContextMenu = browser_onContextMenu
+if gc("browser (table): enable this add-on"):
+    Browser.onContextMenu = browser_onContextMenu
 
 
 def setupBrowserShortcuts(self):
     # self is browser
-    cut = gc("browser: additional shortcut for context menu of table")
+    cut = gc("browser (table): additional shortcut for context menu")
     if cut:
         cm = QShortcut(QKeySequence(cut), self)
         qconnect(cm.activated, lambda b=self: browser_context_helper(b))
-browser_menus_did_init.append(setupBrowserShortcuts)
+if gc("browser (table): enable this add-on"):
+    browser_menus_did_init.append(setupBrowserShortcuts)
+
+
+
+'''
+def reviewerShowContextMenu(self) -> None:
+    opts = self._contextMenu()
+    m = MyFilterMenu(self.mw)
+    self._addMenuItems(m, opts)
+
+    reviewer_will_show_context_menu(self, m)
+    qtMenuShortcutWorkaround(m)
+    m.exec_(QCursor.pos())
+Reviewer.showContextMenu = reviewerShowContextMenu
+
+# doesn't help
+# mw.setupReviewer()
+
+# https://stackoverflow.com/questions/50599045/python-replacing-a-function-within-a-class-of-a-module
+# doesn't work:
+# mw.reviewer.showContextMenu = reviewerShowContextMenu.__get__(mw.reviewer, Reviewer)
+
+# doesn't work:
+#import types
+#mw.reviewer.showContextMenu = types.MethodType(reviewerShowContextMenu, mw.reviewer)
+'''
+
+
+
+# since custom context menus won't load I modify the reviewer
+# https://doc.qt.io/qt-5/qwidget.html#insertAction : I need a "QAction *before"
+# https://stackoverflow.com/questions/54120195/slotting-in-new-items-at-specified-positions-in-qmenu
+
+
+def text_changed(self):
+    search_string = self.le.text()
+    if not search_string:
+        search_string = ""
+    search_string = search_string.lower()
+    search_terms = split_search_terms_withStart(search_string)
+    for element in self.children():
+        if isinstance(element, QMenu):
+            if not does_it_match(search_terms, element.title()):
+                element.menuAction().setVisible(False)
+            else:
+                element.menuAction().setVisible(True)
+        elif isinstance(element, QAction):
+            if hasattr(element, "defaultWidget"):
+                continue
+            if not does_it_match(search_terms, element.text()):
+                if element.isVisible():
+                    element.setVisible(False)
+            else:
+                if not element.isVisible():
+                    element.setVisible(True)
+    self.le.setFocus()
+
+
+from anki.lang import _
+from anki.hooks import addHook
+def ReviewerContextMenu(view, menu):
+    if mw.state != "review":
+        return
+    self = menu
+    self.setStyleSheet(stylesheet)
+    self.le = QLineEdit()
+    self.le.textChanged.connect(lambda: text_changed(self))
+    self.le_container = QWidgetAction(self)  # self.editor.widget
+    self.le_container.setDefaultWidget(self.le)
+
+    for element in self.children():
+        if isinstance(element, QAction):
+            if element.text() == _("Copy"):
+                self.insertAction(element, self.le_container)
+                self.le.setFocus()
+if gc("reviewer: enable this add-on"):
+    addHook("AnkiWebView.contextMenuEvent", ReviewerContextMenu)
+
+
+def reviewer_shortcuts_21(shortcuts):
+    scut = gc("reviewer: additional shortcut for context menu")
+    if scut:
+        additions = (
+            (scut, lambda: mw.reviewer.showContextMenu()),
+        )
+        shortcuts += additions
+if gc("reviewer: enable this add-on"):
+    addHook("reviewStateShortcuts", reviewer_shortcuts_21)

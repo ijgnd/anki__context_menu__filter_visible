@@ -102,6 +102,13 @@ class MyFilterMenu(QMenu):
         self.le_container.setDefaultWidget(self.le)
         self.addAction(self.le_container)
         self.le.setFocus()
+    
+    def make_sure_all_are_visible(self):
+        for element in self.children():
+            if not element.isVisible():
+                element.setVisible(True)
+            elif isinstance(element, QMenu):
+                element.menuAction().setVisible(True)
 
     def text_changed(self):
         search_string = self.le.text()
@@ -140,6 +147,7 @@ def editor_context_helper(self):
     qconnect(a.triggered, self.onPaste)
     m.addSeparator()
     editor_will_show_context_menu(self, m)
+    m.make_sure_all_are_visible()
     m.popup(QCursor.pos())
 
 
@@ -170,6 +178,11 @@ class MyBrowserFilterMenu(QMenu):
         self.le_container.setDefaultWidget(self.le)
         self.addAction(self.le_container)
         self.le.setFocus()
+    
+    def make_sure_all_are_visible(self):
+        for element in self.actions():
+            if not element.isVisible():
+                element.setVisible(True)
 
     def text_changed(self):
         search_string = self.le.text()
@@ -201,6 +214,7 @@ def browser_context_helper(self):
         m.addAction(act)
     browser_will_show_context_menu(self, m)
     qtMenuShortcutWorkaround(m)
+    m.make_sure_all_are_visible()
     m.exec_(QCursor.pos())  # m.exec_(QCursor.pos())  exec_ is necessary unless I do MyBrowserFilterMenu(self)
 
 

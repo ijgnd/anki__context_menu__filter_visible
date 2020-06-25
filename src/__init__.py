@@ -70,6 +70,7 @@ from .filter_functions import (
     split_search_terms_withStart,
 )
 
+
 def gc(arg, fail=False):
     conf = mw.addonManager.getConfig(__name__)
     if conf:
@@ -117,7 +118,12 @@ class MyFilterMenu(QMenu):
         search_string = search_string.lower()
         search_terms = split_search_terms_withStart(search_string)
         for element in self.children():
-            if isinstance(element, QAction):
+            if isinstance(element, QMenu):
+                if not does_it_match(search_terms, element.title()):
+                    element.menuAction().setVisible(False)
+                else:
+                    element.menuAction().setVisible(True)
+            elif isinstance(element, QAction):
                 if hasattr(element, "defaultWidget"):
                     continue
                 if not does_it_match(search_terms, element.text()):
@@ -126,11 +132,6 @@ class MyFilterMenu(QMenu):
                 else:
                     if not element.isVisible():
                         element.setVisible(True)
-            elif isinstance(element, QMenu):
-                if not does_it_match(search_terms, element.title()):
-                    element.menuAction().setVisible(False)
-                else:
-                    element.menuAction().setVisible(True)
         self.le.setFocus()
 
 
@@ -147,7 +148,7 @@ def editor_context_helper(self):
     qconnect(a.triggered, self.onPaste)
     m.addSeparator()
     editor_will_show_context_menu(self, m)
-    m.make_sure_all_are_visible()
+    # m.make_sure_all_are_visible()
     m.popup(QCursor.pos())
 
 

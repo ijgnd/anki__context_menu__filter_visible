@@ -16,6 +16,26 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+This add-on uses the file filter_functions.py which has this copyright and permission notice:
+
+    Copyright (c): 2018  Rene Schallner
+                   2019- ijgnd
+
+    This file (filter_functions.py) is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this file.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 
 
@@ -45,6 +65,10 @@ from aqt.utils import (
 from aqt.browser import Browser
 from aqt.editor import EditorWebView
 
+from .filter_functions import (
+    does_it_match,
+    split_search_terms_withStart,
+)
 
 def gc(arg, fail=False):
     conf = mw.addonManager.getConfig(__name__)
@@ -65,7 +89,7 @@ QMenu::item {
 QMenu::item:selected {
     background-color: #fd4332;
 }
-""" 
+"""
 
 
 class MyFilterMenu(QMenu):
@@ -81,18 +105,22 @@ class MyFilterMenu(QMenu):
 
     def text_changed(self):
         search_string = self.le.text()
+        if not search_string:
+            search_string = ""
+        search_string = search_string.lower()
+        search_terms = split_search_terms_withStart(search_string)
         for element in self.children():
             if isinstance(element, QAction):
                 if hasattr(element, "defaultWidget"):
                     continue
-                if search_string not in element.text().lower():
+                if not does_it_match(search_terms, element.text()):
                     if element.isVisible():
                         element.setVisible(False)
                 else:
                     if not element.isVisible():
                         element.setVisible(True)
             elif isinstance(element, QMenu):
-                if search_string not in element.title():
+                if not does_it_match(search_terms, element.title()):
                     element.menuAction().setVisible(False)
                 else:
                     element.menuAction().setVisible(True)
@@ -125,7 +153,7 @@ EditorWebView.contextMenuEvent = editor_contextMenuEvent
 def onSetupEditorShortcuts(cuts, editor):
     sc = gc("editor: additional shortcut for context menu")
     if sc:
-        pair = (sc, lambda ewv=editor.web: context_helper(ewv))
+        pair = (sc, lambda ewv=editor.web: editor_contextMenuEvent(ewv))
         cuts.append(pair)
 editor_did_init_shortcuts.append(onSetupEditorShortcuts)
 
@@ -145,13 +173,17 @@ class MyBrowserFilterMenu(QMenu):
 
     def text_changed(self):
         search_string = self.le.text()
+        if not search_string:
+            search_string = ""
+        search_string = search_string.lower()
+        search_terms = split_search_terms_withStart(search_string)
         # doesn't work here: Maybe because these actions are defined in QtDesigner/the menu ?
-        # for element in self.children():  # 
+        # for element in self.children():  #
         for element in self.actions():
             # print(element, type(element), element.text())
             if hasattr(element, "defaultWidget"):
                 continue
-            if search_string not in element.text().lower():
+            if not does_it_match(search_terms, element.text()):
                 if element.isVisible():
                     element.setVisible(False)
             else:
@@ -169,7 +201,7 @@ def browser_context_helper(self):
         m.addAction(act)
     browser_will_show_context_menu(self, m)
     qtMenuShortcutWorkaround(m)
-    m.exec_(QCursor.pos())  # m.exec_(QCursor.pos())  exec_ is necessary unless I do MyBrowserFilterMenu(self) 
+    m.exec_(QCursor.pos())  # m.exec_(QCursor.pos())  exec_ is necessary unless I do MyBrowserFilterMenu(self)
 
 
 def browser_onContextMenu(self, _point) -> None:
